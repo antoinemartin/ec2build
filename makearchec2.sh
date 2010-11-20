@@ -1,5 +1,6 @@
 #!/bin/bash
 # 2010 Copyright Yejun Yang (yejunx AT gmail DOT com)
+# --> Modified by Elek Marton under the same licence
 # Creative Commons Attribution-Noncommercial-Share Alike 3.0 United States License.
 # http://creativecommons.org/licenses/by-nc-sa/3.0/us/
 
@@ -11,16 +12,11 @@ else
   EC2_ARCH=x86_64
 fi
 
-ROOT=/tmp/arch_$ARCH
-EBSDEVICE=/dev/xvdg
+
+EBSDEVICE=/dev/xvdi
 NEWROOT=/mnt/newroot
-
+ROOT=${NEWROOT}
 fdisk ${EBSDEVICE} <<EOF
-n
-p
-
-
-+100M
 n
 p
 
@@ -28,20 +24,14 @@ p
 
 w
 EOF
+umount ${NEWROOT}
 
-mkfs.ext3 ${EBSDEVICE}1
-mkfs.btrfs ${EBSDEVICE}2
+
+mkfs.ext4 ${EBSDEVICE}1
 mkdir ${NEWROOT}
-mount -o compress ${EBSDEVICE}2 ${NEWROOT}
+mount ${EBSDEVICE}1 ${NEWROOT}
 chmod 755 ${NEWROOT}
 mkdir ${NEWROOT}/boot
-mount ${EBSDEVICE}1 ${NEWROOT}/boot
-btrfs subvolume create ${NEWROOT}/home
-btrfs subvolume create ${NEWROOT}/etc
-btrfs subvolume create ${NEWROOT}/srv
-btrfs subvolume create ${NEWROOT}/var
-btrfs subvolume create ${NEWROOT}/opt
-btrfs subvolume create ${NEWROOT}/usr
 
 PACKS="filesystem pacman sed coreutils ca-certificates groff \
         less which procps logrotate syslog-ng net-tools initscripts psmisc nano vi \
@@ -66,7 +56,7 @@ Include = /etc/pacman.d/mirrorlist
 Include = /etc/pacman.d/mirrorlist
 EOF
 
-LC_ALL=C mkarchroot -C pacman.conf $ROOT $PACKS
+LC_ALL=C mkarchroot -f -C pacman.conf $ROOT $PACKS
 
 mv $ROOT/etc/pacman.d/mirrorlist $ROOT/etc/pacman.d/mirrorlist.pacorig
 cat <<EOF >$ROOT/etc/pacman.d/mirrorlist
@@ -116,7 +106,7 @@ timeout 1
 
 title  Arch Linux
 	root   (hd0,0)
-	kernel /vmlinuz26-ec2 root=/dev/xvda2 ip=dhcp spinlock=tickless ro
+	kernel /boot/vmlinuz26-ec2 root=/dev/xvda1 ip=dhcp spinlock=tickless ro
 EOF
 
 cd $ROOT/boot
@@ -137,9 +127,7 @@ cp $ROOT/etc/skel/.screenrc $ROOT/root
 mv $ROOT/etc/fstab $ROOT/etc/fstab.pacorig
 
 cat <<EOF >$ROOT/etc/fstab
-$(blkid -c /dev/null -s UUID -o export ${EBSDEVICE}2) /     auto    defaults,compress,relatime 0 1
-$(blkid -c /dev/null -s UUID -o export ${EBSDEVICE}1) /boot auto    defaults,noauto,relatime 0 0
-/dev/xvdb /tmp  auto    defaults,relatime 0 0
+$(blkid -c /dev/null -s UUID -o export ${EBSDEVICE}1) / auto    defaults,noauto,relatime 0 0
 /dev/xvda3 swap  swap   defaults 0 0
 none      /proc proc    nodev,noexec,nosuid 0 0
 none /dev/pts devpts defaults 0 0
@@ -153,9 +141,6 @@ mkdir $ROOT/opt/{sources,packages,srcpackages}
 chmod 1777 $ROOT/opt/{sources,packages,srcpackages}
 
 echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> $ROOT/etc/sudoers
-sed -i 's/bash/zsh/' $ROOT/etc/passwd
-curl -o $ROOT/root/.zshrc  "http://github.com/MrElendig/dotfiles-alice/raw/master/.zshrc"
-curl -o $ROOT/root/.vimrc "http://github.com/MrElendig/dotfiles-alice/raw/master/.vimrc"
 
 mv $ROOT/etc/resolv.conf $ROOT/etc/resolv.conf.pacorig
 echo "nameserver 172.16.0.23" > $ROOT/etc/resolv.conf
@@ -165,6 +150,4 @@ cp -a /root/repo $ROOT/root/
 cp -a /var/cache/pacman/pkg/. $ROOT/var/cache/pacman/pkg/
 
 cd $ROOT
-find . -depth -print | cpio -pdmv --sparse $NEWROOT
-umount ${NEWROOT}/boot
 umount ${NEWROOT}
