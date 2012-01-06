@@ -4,7 +4,6 @@ Introduction
 This little script builds an [Archlinux](http://www.archlinux.org) [AWS EC2] (http://aws.amazon.com/fr/ec2/) image 
 on an EBS Volume.
 
-
 Pre-requisites
 ==============
 
@@ -13,10 +12,8 @@ First you need to build the [linux-ec2](http://github.com/antoinemartin/linux-ec
 version of the stock Archlinux linux kernel with the required modifications to run on EC2. 
 ec2arch is a small script to be run at instance startup to setup the instance.
 
-
 Instructions
 ============
-
 
 * Copy the compiled packages to ./repo
 * Build the local repository database:
@@ -37,7 +34,6 @@ Example on i386 and region eu-west-1:
 
 `aki-47eec433` is the kernel image name for the architecture and the region of the image. [This PDF](http://www.google.fr/url?sa=t&rct=j&q=ec2%20pv-grub%20kernel%20images&source=web&cd=1&ved=0CCIQFjAA&url=https%3A%2F%2Fforums.aws.amazon.com%2Fservlet%2FJiveServlet%2Fdownload%2F30-51562-194272-3595%2Fuser_specified_kernels.pdf&ei=ugQHT_u_BdKOsAaOlZWCDw&usg=AFQjCNEm7T6n0ZwyEQFm61CaufngXMEACw&cad=rja)
 contains the names of all the kernels images depending on architecture and location.
-
 
 TODO
 ====
